@@ -6,6 +6,7 @@ import ChatFeed from "./components/ChatFeed";
 import AnimatedButton from "./components/AnimatedButton";
 import Image from "next/image";
 import posthog from "posthog-js";
+import Settings from "./components/Settings";
 
 const Tooltip = ({ children, text }: { children: React.ReactNode; text: string }) => {
   return (
@@ -21,6 +22,7 @@ const Tooltip = ({ children, text }: { children: React.ReactNode; text: string }
 export default function Home() {
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [initialMessage, setInitialMessage] = useState("");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -104,8 +106,19 @@ export default function Home() {
                   View GitHub
                 </button>
               </a>
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="h-fit flex items-center justify-center px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 gap-1 text-sm font-medium text-gray-700 border border-pillSecondary transition-colors duration-200"
+              >
+                Settings
+              </button>
             </div>
           </nav>
+
+          <Settings
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+          />
 
           {/* Main Content */}
           <main className="flex-1 flex flex-col items-center justify-center p-6">
