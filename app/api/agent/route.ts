@@ -1,10 +1,25 @@
 import { NextResponse } from "next/server";
-import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
 import { CoreMessage, generateObject, LanguageModelV1, UserContent } from "ai";
 import { z } from "zod";
 import { ObserveResult, Stagehand } from "@browserbasehq/stagehand";
 
-const LLMClient = anthropic("claude-3-7-sonnet-latest");
+let LLMClient: LanguageModelV1;
+
+switch (process.env.MODEL_PROVIDER) {
+  case "google":
+    LLMClient = google("models/gemini-1.5-pro-latest");
+    break;
+  case "ollama":
+    LLMClient = createOpenAI({
+      baseURL: process.env.OLLAMA_API_URL || "http://localhost:11434/v1",
+      apiKey: "ollama",
+    })("llama3");
+    break;
+  default:
+    throw new Error(`Unsupported model provider: ${process.env.MODEL_PROVIDER}`);
+}
 
 type Step = {
   text: string;
