@@ -38,28 +38,37 @@ const Tooltip = ({ children, text }: { children: React.ReactNode; text: string }
   );
 };
 
-const FloatingParticle = ({ delay = 0 }: { delay?: number }) => {
+const FloatingParticle = ({ delay = 0, index = 0 }: { delay?: number; index?: number }) => {
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
+  const [position, setPosition] = useState({ x: 0, y: 800 });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setDimensions({ width: window.innerWidth, height: window.innerHeight });
+      const newDimensions = { width: window.innerWidth, height: window.innerHeight };
+      setDimensions(newDimensions);
+      
+      // Use index-based positioning for consistent SSR/client rendering
+      const x = (index * 137 + delay * 100) % newDimensions.width;
+      setPosition({ x, y: newDimensions.height + 10 });
       
       const handleResize = () => {
-        setDimensions({ width: window.innerWidth, height: window.innerHeight });
+        const updatedDimensions = { width: window.innerWidth, height: window.innerHeight };
+        setDimensions(updatedDimensions);
+        const newX = (index * 137 + delay * 100) % updatedDimensions.width;
+        setPosition({ x: newX, y: updatedDimensions.height + 10 });
       };
       
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
     }
-  }, []);
+  }, [index, delay]);
 
   return (
     <motion.div
       className="absolute w-1 h-1 bg-primary-400/30 rounded-full"
       initial={{ 
-        x: Math.random() * dimensions.width,
-        y: dimensions.height + 10,
+        x: position.x,
+        y: position.y,
         opacity: 0 
       }}
       animate={{
@@ -235,7 +244,7 @@ export default function Home() {
             
             {/* Floating Particles */}
             {Array.from({ length: 20 }).map((_, i) => (
-              <FloatingParticle key={i} delay={i * 0.5} />
+              <FloatingParticle key={i} delay={i * 0.5} index={i} />
             ))}
 
             {/* Mouse Follower */}
