@@ -6,7 +6,12 @@ import { useWindowSize } from "usehooks-ts";
 import Image from "next/image";
 import { useAtom } from "jotai/react";
 import { contextIdAtom } from "../atoms";
+import { AgentAvatar } from "./AgentAvatar";
+import { ThemeToggle } from "./ThemeToggle";
+import AnimatedButton from "./AnimatedButton";
 import posthog from "posthog-js";
+import { X, Maximize2, Minimize2, RotateCcw } from "lucide-react";
+import toast from "react-hot-toast";
 interface ChatFeedProps {
   initialMessage?: string;
   onClose: () => void;
@@ -280,144 +285,284 @@ export default function ChatFeed({ initialMessage, onClose }: ChatFeedProps) {
     exit: { opacity: 0, y: -20 },
   };
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const getAgentState = () => {
+    if (isAgentFinished) return "success";
+    if (isLoading) return "loading";
+    if (uiState.steps.length === 0) return "thinking";
+    
+    const lastStep = uiState.steps[uiState.steps.length - 1];
+    switch (lastStep.tool) {
+      case "GOTO": return "browsing";
+      case "ACT": return "acting";
+      case "EXTRACT": return "thinking";
+      case "OBSERVE": return "browsing";
+      default: return "thinking";
+    }
+  };
+
+  const getCurrentMessage = () => {
+    if (isAgentFinished) return "Task completed successfully!";
+    if (isLoading) return "Processing your request...";
+    if (uiState.steps.length === 0) return "Analyzing your goal...";
+    
+    const lastStep = uiState.steps[uiState.steps.length - 1];
+    return lastStep.text;
+  };
+
   return (
     <motion.div
-      className="min-h-screen bg-gray-50 flex flex-col"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
+      className="min-h-screen relative overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
     >
-      <motion.nav
-        className="flex justify-between items-center px-8 py-4 bg-white border-b border-gray-200 shadow-sm"
-        initial={{ y: -20, opacity: 0 }}
+      {/* Animated Background */}
+      <div className="absolute inset-0 mesh-gradient opacity-10" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-50/30 via-accent-50/20 to-purple-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
+
+      {/* Top Navigation */}
+      <motion.nav 
+        className="relative z-10 flex justify-between items-center px-8 py-6 glass-card border-b border-white/10"
+        initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
+        transition={{ duration: 0.6 }}
       >
-        <div className="flex items-center gap-2">
-          <Image
-            src="/favicon.svg"
-            alt="Open Operator"
-            className="w-8 h-8"
-            width={32}
-            height={32}
-          />
-          <span className="font-ppneue text-gray-900">Open Operator</span>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Image
+              src="/favicon.svg"
+              alt="Open Operator"
+              className="w-10 h-10 floating-element"
+              width={40}
+              height={40}
+            />
+            <div className="absolute inset-0 bg-primary-400/20 rounded-full blur-lg animate-pulse" />
+          </div>
+          <div>
+            <h1 className="font-ppneue text-xl font-bold aurora-text">
+              Open Operator
+            </h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-ppsupply">
+              AI Agent in Action
+            </p>
+          </div>
         </div>
-        <motion.button
-          onClick={onClose}
-          className="px-4 py-2 hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors rounded-md font-ppsupply flex items-center gap-2"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          Close
-          {!isMobile && (
-            <kbd className="px-2 py-1 text-xs bg-gray-100 rounded-md">ESC</kbd>
-          )}
-        </motion.button>
+        
+        <div className="flex items-center gap-4">
+          <AgentAvatar 
+            state={getAgentState()}
+            message={getCurrentMessage()}
+            confidence={0.92}
+          />
+          <ThemeToggle />
+          <AnimatedButton
+            onClick={() => {
+              onClose();
+              toast.success("Session closed. Ready for your next query!", {
+                icon: "👋",
+                duration: 3000,
+              });
+            }}
+            variant="glass"
+            size="md"
+            icon={<X className="w-4 h-4" />}
+          >
+            Close
+          </AnimatedButton>
+        </div>
       </motion.nav>
-      <main className="flex-1 flex flex-col items-center p-6">
+
+      {/* Main Content */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 min-h-[calc(100vh-100px)]">
         <motion.div
-          className="w-full max-w-[1280px] bg-white border border-gray-200 shadow-sm rounded-lg overflow-hidden"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          className={`w-full glass-card rounded-3xl shadow-3xl border border-white/20 backdrop-blur-xl overflow-hidden transition-all duration-500 ${
+            isFullscreen ? "max-w-none h-[calc(100vh-8rem)]" : "max-w-7xl"
+          }`}
+          initial={{ y: 50, opacity: 0, scale: 0.95 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
         >
-          <div className="w-full h-12 bg-white border-b border-gray-200 flex items-center px-4">
+          {/* Browser Window Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-neon-sm animate-pulse" />
+              <div className="w-4 h-4 rounded-full bg-yellow-500 shadow-neon-sm animate-pulse" />
+              <div className="w-4 h-4 rounded-full bg-red-500 shadow-neon-sm animate-pulse" />
+            </div>
+            <div className="flex-1 text-center">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400 font-ppsupply">
+                AI Browser Session - {initialMessage}
+              </span>
+            </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500" />
-              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <motion.button
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className="p-2 glass hover:bg-white/20 rounded-lg transition-all duration-300"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                ) : (
+                  <Maximize2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                )}
+              </motion.button>
             </div>
           </div>
 
-          {(() => {
-            console.log("Session URL:", uiState.sessionUrl);
-            return null;
-          })()}
-
-          <div className="flex flex-col md:flex-row">
+          <div className="flex flex-col lg:flex-row h-full">
+            {/* Browser View */}
             {uiState.sessionUrl && !isAgentFinished && (
-              <div className="flex-1 p-6 border-b md:border-b-0 md:border-l border-gray-200 order-first md:order-last">
+              <div className="flex-1 p-6 border-b lg:border-b-0 lg:border-r border-white/10">
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="w-full aspect-video"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="w-full h-full min-h-[400px] lg:min-h-[600px] rounded-xl overflow-hidden shadow-2xl"
                 >
                   <iframe
                     src={uiState.sessionUrl}
-                    className="w-full h-full"
+                    className="w-full h-full border-0"
                     sandbox="allow-same-origin allow-scripts allow-forms"
                     loading="lazy"
                     referrerPolicy="no-referrer"
-                    title="Browser Session"
+                    title="AI Browser Session"
                   />
                 </motion.div>
               </div>
             )}
 
+            {/* Completion View */}
             {isAgentFinished && (
-              <div className="flex-1 p-6 border-b md:border-b-0 md:border-l border-gray-200 order-first md:order-last">
+              <div className="flex-1 p-6 border-b lg:border-b-0 lg:border-r border-white/10">
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="w-full aspect-video"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="w-full h-full min-h-[400px] lg:min-h-[600px] rounded-xl glass-card flex flex-col items-center justify-center text-center p-8"
                 >
-                  <div className="w-full h-full border border-gray-200 rounded-lg flex items-center justify-center">
-                    <p className="text-gray-500 text-center">
-                      The agent has completed the task
-                      <br />
-                      &quot;{initialMessage}&quot;
-                    </p>
-                  </div>
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.8, type: "spring", stiffness: 200 }}
+                    className="mb-6"
+                  >
+                    <AgentAvatar 
+                      state="success" 
+                      message="Mission accomplished!"
+                      confidence={1.0}
+                    />
+                  </motion.div>
+                  <h3 className="text-2xl font-ppneue font-bold aurora-text mb-4">
+                    Task Completed Successfully!
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 font-ppsupply mb-6 max-w-md">
+                    The AI agent has successfully completed your request: 
+                    <span className="block mt-2 font-medium text-primary-600 dark:text-primary-400">
+                      "{initialMessage}"
+                    </span>
+                  </p>
+                  <AnimatedButton
+                    onClick={onClose}
+                    variant="gradient"
+                    size="lg"
+                    icon={<RotateCcw className="w-5 h-5" />}
+                  >
+                    Start New Session
+                  </AnimatedButton>
                 </motion.div>
               </div>
             )}
 
-            <div className="md:w-[400px] p-6 min-w-0 md:h-[calc(56.25vw-3rem)] md:max-h-[calc(100vh-12rem)]">
+            {/* Chat Panel */}
+            <div className="lg:w-[450px] p-6 flex flex-col">
+              <div className="mb-4">
+                <h3 className="text-lg font-ppneue font-bold text-gray-800 dark:text-gray-200 mb-2">
+                  Agent Activity
+                </h3>
+                <div className="h-px bg-gradient-to-r from-primary-500 to-accent-500 rounded-full" />
+              </div>
+              
               <div
                 ref={chatContainerRef}
-                className="h-full overflow-y-auto space-y-4"
+                className="flex-1 overflow-y-auto space-y-4 pr-2"
+                style={{ maxHeight: isFullscreen ? "calc(100vh - 20rem)" : "500px" }}
               >
+                {/* Goal Display */}
                 {initialMessage && (
                   <motion.div
                     variants={messageVariants}
-                    className="p-4 bg-blue-50 rounded-lg font-ppsupply"
+                    initial="hidden"
+                    animate="visible"
+                    className="glass-card p-4 rounded-xl border border-primary-200/50"
                   >
-                    <p className="font-semibold">Goal:</p>
-                    <p>{initialMessage}</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
+                      <span className="text-sm font-semibold text-primary-600 dark:text-primary-400 font-ppsupply">
+                        Goal
+                      </span>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 font-ppsupply">
+                      {initialMessage}
+                    </p>
                   </motion.div>
                 )}
 
+                {/* Steps */}
                 {uiState.steps.map((step, index) => (
                   <motion.div
                     key={index}
                     variants={messageVariants}
-                    className="p-4 bg-white border border-gray-200 rounded-lg font-ppsupply space-y-2"
+                    initial="hidden"
+                    animate="visible"
+                    transition={{ delay: index * 0.1 }}
+                    className="glass-card p-4 rounded-xl border border-white/20 hover:border-white/40 transition-all duration-300 group"
                   >
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400 font-ppsupply">
                         Step {step.stepNumber}
                       </span>
-                      <span className="px-2 py-1 bg-gray-100 rounded text-xs">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        step.tool === "GOTO" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
+                        step.tool === "ACT" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                        step.tool === "EXTRACT" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" :
+                        step.tool === "OBSERVE" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" :
+                        "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                      }`}>
                         {step.tool}
                       </span>
                     </div>
-                    <p className="font-medium">{step.text}</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="font-medium text-gray-800 dark:text-gray-200 font-ppsupply mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                      {step.text}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-ppsupply">
                       <span className="font-semibold">Reasoning: </span>
                       {step.reasoning}
                     </p>
                   </motion.div>
                 ))}
+
+                {/* Loading State */}
                 {isLoading && (
                   <motion.div
                     variants={messageVariants}
-                    className="p-4 bg-gray-50 rounded-lg font-ppsupply animate-pulse"
+                    initial="hidden"
+                    animate="visible"
+                    className="glass-card p-4 rounded-xl border border-white/20"
                   >
-                    Processing...
+                    <div className="flex items-center gap-3">
+                      <div className="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                      <span className="text-gray-600 dark:text-gray-400 font-ppsupply">
+                        Agent is processing...
+                      </span>
+                    </div>
                   </motion.div>
                 )}
               </div>

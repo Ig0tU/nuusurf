@@ -5,16 +5,261 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* Enhanced Color Palette */
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --aurora-gradient: linear-gradient(45deg, #00d4ff, #8b5cf6, #ec4899, #10b981);
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  
+  /* Animation Variables */
+  --animation-speed: 1s;
+  --hover-scale: 1.05;
+  --glow-color: rgba(59, 130, 246, 0.5);
+  
+  /* Spacing & Layout */
+  --border-radius: 12px;
+  --border-radius-lg: 20px;
+  --spacing-unit: 8px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --glass-bg: rgba(0, 0, 0, 0.2);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --shadow-color: rgba(255, 255, 255, 0.1);
   }
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  font-feature-settings: 'rlig' 1, 'calt' 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.3);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.5);
+}
+
+/* Glass Morphism Components */
+@layer components {
+  .glass-card {
+    @apply backdrop-blur-xl bg-white/10 border border-white/20 shadow-glass;
+  }
+  
+  .glass-card-dark {
+    @apply backdrop-blur-xl bg-black/10 border border-white/10 shadow-glass;
+  }
+  
+  .neon-glow {
+    @apply shadow-neon;
+    filter: drop-shadow(0 0 10px currentColor);
+  }
+  
+  .aurora-text {
+    background: linear-gradient(45deg, #00d4ff, #8b5cf6, #ec4899, #10b981);
+    background-size: 400% 400%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-xy 3s ease infinite;
+  }
+  
+  .mesh-gradient {
+    background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+    background-size: 400% 400%;
+    animation: gradient-xy 15s ease infinite;
+  }
+  
+  .floating-element {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .glow-on-hover {
+    transition: all 0.3s ease;
+  }
+  
+  .glow-on-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2), 0 0 20px var(--glow-color);
+  }
+  
+  .interactive-card {
+    @apply transition-all duration-300 ease-out cursor-pointer;
+    transform-style: preserve-3d;
+  }
+  
+  .interactive-card:hover {
+    @apply scale-105;
+    transform: translateY(-8px) rotateX(5deg);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  }
+  
+  .shimmer-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .shimmer-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    animation: shimmer 2.5s linear infinite;
+  }
+  
+  .typing-effect {
+    overflow: hidden;
+    border-right: 2px solid #f97316;
+    white-space: nowrap;
+    animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+  }
+  
+  .perspective-card {
+    perspective: 1000px;
+  }
+  
+  .card-3d {
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+  }
+  
+  .card-3d:hover {
+    transform: rotateY(10deg) rotateX(10deg);
+  }
+}
+
+/* Advanced Button Styles */
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-medium rounded-lg;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:from-primary-600 hover:to-primary-700 hover:scale-105 hover:shadow-lg;
+    @apply active:scale-95;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+  
+  .btn-glass {
+    @apply px-6 py-3 glass text-white font-medium rounded-lg;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:bg-white/20 hover:scale-105 hover:shadow-glass;
+    @apply active:scale-95;
+    @apply focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2;
+  }
+  
+  .btn-neon {
+    @apply px-6 py-3 bg-transparent border-2 border-current text-neon-blue font-medium rounded-lg;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:bg-current hover:text-white hover:shadow-neon;
+    @apply active:scale-95;
+    @apply focus:outline-none focus:ring-2 focus:ring-current focus:ring-offset-2;
+  }
+}
+
+/* Loading Animations */
+@layer components {
+  .loading-dots {
+    display: inline-flex;
+    gap: 4px;
+  }
+  
+  .loading-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: loading-bounce 1.4s ease-in-out infinite both;
+  }
+  
+  .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+  .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0s; }
+}
+
+@keyframes loading-bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus Styles */
+.focus-visible {
+  @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+}
+
+/* Selection Styles */
+::selection {
+  background: rgba(249, 115, 22, 0.3);
+  color: inherit;
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }
